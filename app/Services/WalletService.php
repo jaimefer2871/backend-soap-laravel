@@ -23,8 +23,7 @@ class WalletService
         $output = [
             'success' => true,
             'code' => 200,
-            'messager' => 'OK',
-            'errors_details' => [],
+            'message' => 'OK',
             'data' => []
         ];
 
@@ -49,7 +48,7 @@ class WalletService
                 $WalletInstance = Wallet::where('client_id', $client->id)->first();
 
                 if (!empty($WalletInstance)) {
-                    $WalletInstance->amount += floatval($amount);
+                    $WalletInstance->funds += floatval($amount);
 
                     if ($WalletInstance->save()) {
                         $wasReload = true;
@@ -88,15 +87,50 @@ class WalletService
      */
     public function getFunds(string $document, string $phone)
     {
-        return [
+        $output = [
             'success' => true,
-            'cod_error' => false,
-            'message_error' => null,
+            'code' => 200,
+            'message' => 'OK',
             'data' => [
-                'document' => $document,
-                'phone' => $phone,
+                'funds_available' => 0
             ]
-
         ];
+
+        $input = [
+            'document'  => $document,
+            'phone'     => $phone
+        ];
+
+        try {
+            Validator::make($input, [
+                'document'  => 'required|alpha_num',
+                'phone'     => 'required|string'
+            ], [
+                'required' => 'The :attribute field is required'
+            ])->validate();
+
+            $client = Client::where('phone', $phone)->where('document', $document)->first();
+
+            if (!empty($client)) {
+                $WalletInstance = Wallet::where('client_id', $client->id)->first();
+
+                if (!empty($WalletInstance)) {
+                    $output['data'] = [
+                        'funds_available' => $WalletInstance->funds
+                    ];
+                }
+            }
+        } catch (ValidationException $validation) {
+            $output['success'] = false;
+            $output['code'] = $validation->status;
+            $output['message'] = $validation->getMessage();
+            $output['errors_details'] = $validation->errors();
+        } catch (\Throwable $th) {
+            $output['success'] = false;
+            $output['code'] = 500;
+            $output['message'] = $th->getMessage();
+        }
+
+        return $output;
     }
 }
