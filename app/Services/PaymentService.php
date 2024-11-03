@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Models\Client;
 use App\Models\Payment;
+use App\Models\Wallet;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Validator;
@@ -112,41 +114,48 @@ class PaymentService
      * @param string $phone
      * @return array
      */
-    public function confirm(string $document, string $phone)
+    public function confirm(string $sessionId, string $token)
     {
         $output = [
             'success' => true,
             'code' => 200,
             'message' => 'OK',
-            'data' => [
-                'funds_available' => 0
-            ]
+            'data' => []
         ];
 
         $input = [
-            'document'  => $document,
-            'phone'     => $phone
+            'session_id'  => $sessionId,
+            'token'     => $token
         ];
 
         try {
             Validator::make($input, [
-                'document'  => 'required|alpha_num',
-                'phone'     => 'required|string'
-            ], [
-                'required' => 'The :attribute field is required'
+                'session_id'  => 'required|string',
+                'token'     => 'required|string'
             ])->validate();
 
-            // $client = Client::where('phone', $phone)->where('document', $document)->first();
+            $payment = Payment::where('session_id', $sessionId)
+                ->where('token', $token)
+                ->where('confirmed', false)
+                ->first();
 
-            // if (!empty($client)) {
-            //     $WalletInstance = Wallet::where('client_id', $client->id)->first();
+            if (!empty($payment)) {
+                $payment->confirmed = true;
+                $payment->date_confirmed = Carbon::now();
 
-            //     if (!empty($WalletInstance)) {
-            //         $output['data'] = [
-            //             'funds_available' => $WalletInstance->funds
-            //         ];
-            //     }
-            // }
+                if ($payment->save()) {
+                    $wallet = Wallet::where('client_id', $payment->client_id)->first();
+
+                    if (!empty($wallet)) {
+                        $wallet->funds -= floatval($payment->amount);
+                        $wallet->save();
+                    }
+                }
+            } else {
+                $output['success'] = false;
+                $output['code'] = 422;
+                $output['message'] = 'Payment could not be confirmed. Please verify the data provided';
+            }
         } catch (ValidationException $validation) {
             $output['success'] = false;
             $output['code'] = $validation->status;
