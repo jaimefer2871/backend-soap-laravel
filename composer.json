@@ -6,6 +6,7 @@
     "type": "project",
     "require": {
         "php": "^8.1",
+        "illuminate/mail": "^10.48",
         "laminas/laminas-soap": "^2.5",
         "laravel/lumen-framework": "^10.0"
     },

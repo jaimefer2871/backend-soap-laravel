@@ -75,7 +75,7 @@ class WalletService
             $output['message'] = $th->getMessage();
         }
 
-        return $output;
+        return json_decode(json_encode($output), FALSE);
     }
 
     /**
@@ -131,6 +131,6 @@ class WalletService
             $output['message'] = $th->getMessage();
         }
 
-        return $output;
+        return json_decode(json_encode($output), FALSE);
     }
 }

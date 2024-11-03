@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Client;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use stdClass;
 
 class ClientService
 {
@@ -22,8 +23,7 @@ class ClientService
         $output = [
             'success' => true,
             'code' => 200,
-            'messager' => 'OK',
-            'errors_details' => [],
+            'message' => 'OK',
             'data' => []
         ];
 
@@ -36,7 +36,7 @@ class ClientService
 
         try {
             Validator::make($input, [
-                'document'  => 'required|alpha_num|unique:clients',
+                'document'  => 'required|string|unique:clients',
                 'name'      => 'required|string',
                 'email'     => 'required|email|unique:clients',
                 'phone'     => 'required|string|unique:clients'
@@ -62,6 +62,6 @@ class ClientService
             $output['message'] = $th->getMessage();
         }
 
-        return $output;
+        return json_decode(json_encode($output), FALSE);
     }
 }

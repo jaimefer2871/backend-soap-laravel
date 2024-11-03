@@ -31,5 +31,17 @@ $router->group(['prefix' => 'api'], function () use ($router) {
                 'uses' => 'WalletController@serverAction'
             ]);
         });
+
+        $router->group(['prefix' => 'payments'], function () use ($router) {
+            $router->get('/soap/wsdl', [
+                'as' => 'payments-soap-wsdl',
+                'uses' => 'PaymentController@wsdlAction'
+            ]);
+
+            $router->post('/soap/server', [
+                'as' => 'payments-soap-server',
+                'uses' => 'PaymentController@serverAction'
+            ]);
+        });
     });
 });
